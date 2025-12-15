@@ -3,5 +3,4 @@
 __pycache__/
 .idea/*
 .idea
-#  Ignore Dataset CSV file containing disease and symptom
-disease_docs/DiseaseAndSymptoms.csv
+.DS_Store
