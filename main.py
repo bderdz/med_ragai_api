@@ -1,7 +1,7 @@
 from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
-from rag_agent import agent
+from src.rag_agent import agent
 from langchain_core.messages import HumanMessage
 
 app = FastAPI()
