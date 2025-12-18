@@ -1,41 +1,42 @@
+import os
 from typing import TypedDict
+
+from dotenv import load_dotenv
+from langchain_core.documents import Document
 import pandas as pd
 
-# To print full dataframe while debugging
-pd.set_option('display.max_colwidth', None)
 
-DATASET_FILENAME = "../dataset/processed/disease_symptoms.csv"
-
-df = pd.read_csv(DATASET_FILENAME)
-
-# List of symptom columns
-symptoms_cols = df.columns.drop(['prognosis', 'icd_code'])
-
-
-# Prepare documents for RAG
 class MetaData(TypedDict):
+    """
+     Metadata template for documents
+    """
     disease: str
+    icd_code: str
     source: str
 
 
-def create_content(row: pd.Series) -> str:
-    symptoms: list[str] = []
+def prepare_docs(df: pd.DataFrame, source: str) -> list[Document]:
+    docs = []
+    # List of symptom columns
+    symptom_cols = df.columns.drop(['prognosis', 'icd_code'])
 
-    for symptom, prob in row.items():
-        if symptom not in symptoms_cols:
-            continue
-        if prob > 0.0:
-            symptom = symptom.replace("_", " ")
-            symptoms.append(f"{symptom} {prob}%")
-    return f"DISEASE: {row['prognosis']}\nICD: {row['icd_code']}\nSYMPTOMS: {', '.join(symptoms) if symptoms else 'Not specified'}"
+    for _, row in df.iterrows():
+        disease = row['prognosis']
+        icd_code = row['icd_code']
+        content = [f'Disease: {disease} ICD CODE: {icd_code}',
+                   'Symptoms and probabilities of appearance:']
 
+        symptoms = []
+        for symptom in symptom_cols:
+            if row[symptom] > 0.0:
+                symptoms.append(
+                    f"- {symptom.replace('_', ' ')} {row[symptom]}%")
 
-def create_metadata(row: pd.Series) -> MetaData:
-    return MetaData(disease=row["prognosis"], source=DATASET_FILENAME)
+        doc_content = "\n".join(content + symptoms)
+        doc_metadata = MetaData(
+            disease=disease, icd_code=icd_code, source=source)
+        doc = Document(page_content=doc_content, metadata=doc_metadata)
+        docs.append(doc)
 
-
-df_docs = pd.DataFrame()
-df_docs['content'] = df.apply(create_content, axis=1)
-df_docs["metadata"] = df.apply(create_metadata, axis=1)
-
-df_docs.to_json("docs/disease_documents.jsonl", orient="records", lines=True, force_ascii=False)
+    print(f"INFO: Loaded {len(docs)} documents from {source}.")
+    return docs
