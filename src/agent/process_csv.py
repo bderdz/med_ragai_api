@@ -1,7 +1,4 @@
-import os
 from typing import TypedDict
-
-from dotenv import load_dotenv
 from langchain_core.documents import Document
 import pandas as pd
 
@@ -16,6 +13,10 @@ class MetaData(TypedDict):
 
 
 def prepare_docs(df: pd.DataFrame, source: str) -> list[Document]:
+    """
+    Preprocess the dataframe into a list of Documents with metadata for Vectors store.
+    Each document contains disease name, ICD code, symptoms and their probabilities.
+    """
     docs = []
     # List of symptom columns
     symptom_cols = df.columns.drop(['prognosis', 'icd_code'])

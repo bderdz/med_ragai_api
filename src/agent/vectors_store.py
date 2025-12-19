@@ -2,9 +2,8 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
-from src.process_csv import prepare_docs
+from src.agent import prepare_docs
 
 load_dotenv()
 
@@ -14,6 +13,10 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 
 
 def get_vectors_store() -> Chroma:
+    """
+    Load or create a Chroma vector store from the CSV dataset by using prepare_docs.
+    Uses HuggingFaceEmbeddings local embeddings model specified in EMBEDDING_MODEL env. variable.
+    """
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
     # embeddings = GoogleGenerativeAIEmbeddings(model='gemini-embedding-001')
 

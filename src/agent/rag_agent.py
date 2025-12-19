@@ -19,6 +19,10 @@ If you are unable to find any relevant information, respond with "No relevant da
 
 
 def get_agent(vectors_store: Chroma):
+    """
+    Creates a RAG agent using Gemini model with a retriever tool for searching diseases based on symptoms.
+    Needs a Chroma vector store as input.
+    """
     model = ChatGoogleGenerativeAI(
         model=GEMINI_MODEL,
         temperature=0.2
