@@ -1,33 +1,28 @@
-from typing import Literal
+import uvicorn
+from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 from fastapi import FastAPI
-from pydantic import BaseModel
-from src.rag_agent import agent
-from langchain_core.messages import HumanMessage
+from src.agent import get_vectors_store, get_agent
+from src.routes import diagnosis
 
-app = FastAPI()
-
-
-class SymptomsInput(BaseModel):
-    age: int
-    gender: Literal["male", "female"]
-    symptoms: list[str]
+load_dotenv()
 
 
-class DiagnoseResponse(BaseModel):
-    possible_diseases: list[str]
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    vectors_store = get_vectors_store()
+    app.state.agent = get_agent(vectors_store)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+app.include_router(diagnosis.router)
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"message": "Welcome to the Health Diagnosis RAG AI API"}
 
 
-@app.get("/diagnose", response_model=DiagnoseResponse)
-async def diagnose(symptoms: SymptomsInput):
-    prompt = f"Gender: {symptoms.gender}, age: {symptoms.age}, symptoms: {', '.join(symptoms.symptoms)}."
-    response = agent.invoke({
-        "messages": [HumanMessage(content=prompt)]
-    })["messages"][-1].content
-
-    possible_diseases = response.split(", ")
-    return DiagnoseResponse(possible_diseases)
+if __name__ == '__main__':
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

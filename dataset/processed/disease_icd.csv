@@ -1,5 +1,5 @@
 prognosis,icd_code
-(Vertigo) Paroxysmal Positional Vertigo,
+(Vertigo) Paroxysmal Positional Vertigo,H8110
 Human immunodeficiency virus [HIV] disease,B20
 Acne,L700
 Alcoholic Hepatitis,K7010
@@ -24,7 +24,7 @@ Deafness,H93011
 Dementia,F0150
 Dengue,A90
 Diabetes,E0800
-Dimorphic Hemorrhoids (Piles),
+Dimorphic Hemorrhoids (Piles),K648
 Diphtheria,A360
 Drug Reaction,L432
 Dysentery,A060
@@ -59,7 +59,7 @@ Nipah virus disease,B0802
 Osteoarthritis,M160
 Otitis Media,A380
 Paralysis,G4753
-Paralysis (Brain Hemorrhage),
+Paralysis (Brain Hemorrhage),I613
 "Parkinsonism, unspecified",G20C
 Peptic Ulcer,K270
 Pleurisy,A156
