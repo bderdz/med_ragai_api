@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from src.agent import prepare_docs
+from src.rag.process_csv import prepare_docs
 
 load_dotenv()
 
