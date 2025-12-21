@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from src.rag.vectors_store import get_vectors_store
 from src.rag import DiagnosisAssistant
 from src.routes import diagnosis
+from src.ui import load_ui
+import gradio as gr
 
 load_dotenv()
 
@@ -20,11 +22,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(diagnosis.router)
 
+# @app.get("/")
+# async def root() -> dict[str, str]:
+#     return {"message": "Welcome to the Health Diagnosis RAG AI API"}
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Welcome to the Health Diagnosis RAG AI API"}
 
+api_ui = load_ui()
+app = gr.mount_gradio_app(app, api_ui, path="/")
 
 if __name__ == '__main__':
     # Develop only

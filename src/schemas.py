@@ -9,7 +9,7 @@ class SymptomsInput(BaseModel):
     symptoms: list[str]
 
 
-class DiseaseSuggestion(BaseModel):
+class DiseaseDetails(BaseModel):
     """Schema for a single disease suggested by the model"""
     name: str = Field(..., description="Name of the disease from the context")
     icd_code: str = Field(..., description="ICD code of the disease")
@@ -20,4 +20,4 @@ class DiseaseSuggestion(BaseModel):
 
 class DiagnoseResponse(BaseModel):
     """Response schema for diagnose endpoint"""
-    possible_diseases: list[DiseaseSuggestion]
+    possible_diseases: list[DiseaseDetails]
