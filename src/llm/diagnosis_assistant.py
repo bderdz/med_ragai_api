@@ -45,17 +45,23 @@ prompt_template = ChatPromptTemplate.from_messages([
 
 
 class DiagnosisAssistant:
+    """
+    RAG diagnosis assistant based on GEMINI model.
+    """
+
     def __init__(self, vectors_store: Chroma):
         model = ChatGoogleGenerativeAI(
             model=GEMINI_MODEL,
             temperature=0.2
         )
-
         self.llm = model.with_structured_output(DiagnoseResponse)
         self.retriever = vectors_store.as_retriever(search_type="similarity", search_kwargs={"k": 6})
         print("INFO: DiagnosisAssistant initialized with model:", GEMINI_MODEL)
 
     def diagnose(self, patient_info: SymptomsInput) -> DiagnoseResponse:
+        """
+
+        """
         symptoms = ", ".join(patient_info.symptoms)
         docs = self.retriever.invoke(symptoms)
         context = "\n\n".join([doc.page_content for doc in docs])
@@ -68,6 +74,5 @@ class DiagnosisAssistant:
             "symptoms": symptoms,
             "context": context
         })
-
         response = self.llm.invoke(prompt)
         return response

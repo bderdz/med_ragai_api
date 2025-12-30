@@ -1,56 +1,55 @@
+from typing import Any
+
 import gradio as gr
-import httpx
-from src.schemas import SymptomsInput
+from src.llm import LocalChatAgent
 
-info = """
-<div style="text-align: center;font-size:18px;font-weight:bold;">
-    <p>⚠️ Bigger models like gemini-2.5-flash may take longer time to respond than lite version. ⚠️</p>
-    <p>HTTP Request timeout is set to 120 seconds.</p>
-</div>
-"""
+EXAMPLES = [
+    "Hello",
+    "Hi, i'm a 23 years old man. I have headache, cough and temperature.",
+    "Hi, I'm not feeling well. I have a persistent cough and sore throat."]
 
 
-async def diagnose_request(gender: str, age: int, symptoms: str):
-    # Input validation
-    if age <= 0:
-        return "Please enter a valid age"
-    if not gender:
-        return "Please select a gender"
-    if not symptoms:
-        return "Please enter at least one symptom"
+class ChatAgentUI:
+    def __init__(self, local_model: str):
+        self.chat_agent = LocalChatAgent(local_model)
 
-    symptoms_list = [symptom.strip() for symptom in symptoms.split(",")]
-    body = SymptomsInput(age=age, gender=gender, symptoms=symptoms_list)
+        with gr.Blocks(title="Medical Diagnosis Assistant API") as self.ui:
+            gr.HTML("<h1 style='text-align: center;'>👨‍⚕️ Medical Diagnosis Assistant API</h1>")
+            with gr.Row():
+                with gr.Column(scale=2, min_width=300):
+                    chatbot = gr.Chatbot(min_height=550)
+                    self.interface = gr.ChatInterface(
+                        fn=self.respond,
+                        examples=EXAMPLES,
+                        chatbot=chatbot
+                    )
+                    self.interface.chatbot.clear(fn=self.clear_history)
+                with gr.Column(scale=1):
+                    gr.Markdown("**Welcome to the Medical Diagnosis Assistant**\n\n"
+                                "**This AI-powered medical assistant helps you identify possible diseases based on your symptoms.**")
+                    gr.Markdown("## ❔ How to use:")
+                    gr.Markdown("### 💬 Chat:")
+                    gr.Markdown(
+                        "You can start a conversation with the AI medical assistant by typing your messages in the chat interface on the left."
+                        "**The assistant will guide you through a series of questions to gather necessary information for diagnosis:**\n\n"
+                        "1. Age\n\n2. Gender\n\n3. List of symptoms\n\n")
+                    gr.Markdown("### 📡 API:")
+                    gr.Markdown(
+                        "The chat agent is built on top of the Diagnosis Assistant API. You can access the API documentation at **/docs endpoint** "
+                        "[http://localhost:8000/docs](http://localhost:8000/docs) once the server is running.")
+                    gr.Markdown("### ⚠️ Info:")
+                    gr.Markdown(
+                        "**Bigger LLM like gemini-2.5-flash may take longer time to respond than lite version..️**\n\n"
+                        "**HTTP Request timeout is set to 120 seconds.**")
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        try:
-            response = await client.post("http://localhost:8000/diagnose", json=body.model_dump())
-            response.raise_for_status()
-            data = response.json()
-            output = "Possible Diseases:\n\n"
-            for disease in data["possible_diseases"]:
-                output += f"- {disease['name']} (ICD Code: {disease['icd_code']})\nREASONING:\n{disease['reasoning']}\n\n"
+    def clear_history(self) -> None:
+        """Clear chat agent history"""
+        self.chat_agent.reset_history()
+        print("INFO: Chat history cleared.")
 
-            return output
-        except httpx.HTTPStatusError as e:
-            return f"API ERROR {e.response.status_code}: {e.response.text}"
-        except httpx.RequestError as e:
-            return f"REQUEST ERROR: {e}"
+    async def respond(self, message: str, history: Any) -> str:
+        if not message:
+            return ""
 
-
-def load_ui() -> gr.Interface:
-    api_ui = gr.Interface(
-        fn=diagnose_request,
-        inputs=[
-            gr.Radio(["male", "female"], label="Gender", value="male"),
-            gr.Number(label="Age", value=20),
-            gr.Textbox(label="Symptoms", placeholder="symptom1, symptom2, ...", lines=3)
-        ],
-        outputs=[gr.Textbox(label="Diagnosis Result", lines=20)],
-        article=info,
-        title="Medical Diagnosis Assistant",
-        description="Enter patient information to get possible disease diagnoses based on symptoms.",
-        flagging_mode="never"
-    )
-
-    return api_ui
+        answer = await self.chat_agent.chat(message)
+        return answer

@@ -1,16 +1,20 @@
+import os
 import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from src.rag.vectors_store import get_vectors_store
-from src.rag import DiagnosisAssistant
+from src.llm import DiagnosisAssistant
 from src.routes import diagnosis
-from src.ui import load_ui
+from src.ui import ChatAgentUI
 import gradio as gr
 
 load_dotenv()
 
+LOCAL_MODEL = os.getenv("LOCAL_MODEL")
 
+
+# API initialization
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     vectors_store = get_vectors_store()
@@ -22,14 +26,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(diagnosis.router)
 
-# @app.get("/")
-# async def root() -> dict[str, str]:
-#     return {"message": "Welcome to the Health Diagnosis RAG AI API"}
+# UI layer above API with chat local agent
+chat_ui = ChatAgentUI(local_model=LOCAL_MODEL)
+app = gr.mount_gradio_app(app, chat_ui.ui, path="/")
 
-
-api_ui = load_ui()
-app = gr.mount_gradio_app(app, api_ui, path="/")
-
+# Develop only
 if __name__ == '__main__':
-    # Develop only
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
