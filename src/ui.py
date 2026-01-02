@@ -45,7 +45,6 @@ class ChatAgentUI:
     def clear_history(self) -> None:
         """Clear chat agent history"""
         self.chat_agent.reset_history()
-        print("INFO: Chat history cleared.")
 
     async def respond(self, message: str, history: Any) -> str:
         if not message:

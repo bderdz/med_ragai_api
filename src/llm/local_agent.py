@@ -1,10 +1,13 @@
 import json, os, re
+import logging
 from json import JSONDecodeError
 from typing import Any
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 
 from src.llm.tools import get_diagnosis_tool
+
+logger = logging.getLogger(__name__)
 
 # Local model config ( Pipeline kwargs )
 config = {
@@ -107,8 +110,8 @@ def parse_tool_calls(response: str) -> dict[str, Any]:
     Parse tool call json from model response text.
     Returns JSON dictionary
     """
+    logger.debug(f"Parsing tool call from response: {response}")
     response = response.replace("```", "").replace("json", "")
-    print("DEBUG: ", response)
     parsed_call = re.search(r"\s*({.*}?)\s*", response, re.DOTALL)
     if parsed_call:
         try:
@@ -117,7 +120,7 @@ def parse_tool_calls(response: str) -> dict[str, Any]:
                 raise JSONDecodeError("Bad tool call format.")
             return tool_call
         except JSONDecodeError as e:
-            print(f"ERROR: JSON parser ERROR: {e}")
+            logger.error(f"TOOL JSON parser ERROR: {e}")
             return {"error": f"Bad tool call format, JSON parsing failed. Please try again."}
     return {}
 
@@ -153,9 +156,10 @@ class LocalChatAgent:
             verbose=True
         )
         self.history: list[BaseMessage] = [SystemMessage(content=SYSTEM)]
-        print("INFO: LocalChatAgent initialized with model:", model)
+        logger.info(f"LocalChatAgent initialized with model: {model}")
 
     def reset_history(self):
+        logger.info("Chat Agent history reset.")
         self.history = [SystemMessage(content=SYSTEM)]
 
     async def chat(self, prompt: str) -> str:
@@ -163,7 +167,7 @@ class LocalChatAgent:
         self.history.append(user_msg)
 
         response = self.agent.invoke(self.history)
-        print("RAW RESPONSE:", response.content)
+        logger.debug(f"Local model RAW response: {response.content}")
         self.history.append(response)
         # Tool call processing
         tool_call = parse_tool_calls(response.content)

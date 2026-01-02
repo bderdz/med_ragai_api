@@ -1,6 +1,9 @@
+import logging
 from typing import TypedDict
 from langchain_core.documents import Document
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class MetaData(TypedDict):
@@ -39,5 +42,5 @@ def prepare_docs(df: pd.DataFrame, source: str) -> list[Document]:
         doc = Document(page_content=doc_content, metadata=doc_metadata)
         docs.append(doc)
 
-    print(f"INFO: Loaded {len(docs)} documents from {source}.")
+    logger.info(f"Loaded {len(docs)} documents from {source}.")
     return docs

@@ -1,9 +1,12 @@
+import logging
 import os
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_chroma import Chroma
 from src.schemas import DiagnoseResponse, SymptomsInput
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -56,7 +59,7 @@ class DiagnosisAssistant:
         )
         self.llm = model.with_structured_output(DiagnoseResponse)
         self.retriever = vectors_store.as_retriever(search_type="similarity", search_kwargs={"k": 6})
-        print("INFO: DiagnosisAssistant initialized with model:", GEMINI_MODEL)
+        logger.info(f"DiagnosisAssistant initialized with model: {GEMINI_MODEL}")
 
     def diagnose(self, patient_info: SymptomsInput) -> DiagnoseResponse:
         """
@@ -66,7 +69,7 @@ class DiagnosisAssistant:
         docs = self.retriever.invoke(symptoms)
         context = "\n\n".join([doc.page_content for doc in docs])
         # DEBUG
-        print("DEBUG: Retrieved context:\n", context)
+        logger.debug(f"Symptoms: {symptoms}\nRetrieved context:\n{context}")
 
         prompt = prompt_template.invoke({
             "gender": patient_info.gender,

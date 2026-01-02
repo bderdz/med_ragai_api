@@ -6,3 +6,5 @@ __pycache__/
 .git/
 .gitignore
 .idea/
+.logs/
+.chroma_db/
