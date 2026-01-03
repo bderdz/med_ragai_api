@@ -1,10 +1,10 @@
-import logging
-import os
+import logging, os
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_chroma import Chroma
 from src.schemas import DiagnoseResponse, SymptomsInput
+from src.llm.guardrails import detect_prompt_injection
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,9 @@ class DiagnosisAssistant:
         """
 
         """
+        # Prompt injection detection
+        detect_prompt_injection(patient_info.__str__())
+
         symptoms = ", ".join(patient_info.symptoms)
         docs = self.retriever.invoke(symptoms)
         context = "\n\n".join([doc.page_content for doc in docs])

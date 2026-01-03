@@ -1,11 +1,11 @@
-import json, os, re
-import logging
+import json, re, logging
 from json import JSONDecodeError
 from typing import Any
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
-
+from src.llm.guardrails import detect_prompt_injection, SecurityError
 from src.llm.tools import get_diagnosis_tool
+from src.llm.dispatcher import tool_dispatcher, ToolError, ToolValidationError, ToolNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -48,20 +48,6 @@ Your ONLY goal is to collect exactly 3 variables from the user:
 When you have all info, output ONLY this JSON structure (no markdown, no text before/after):
 {"tool": "get_diagnosis_tool", "arguments": {"age": 25, "gender": "male", "symptoms": ["fever"]}}
 
-### RESPOND FORMAT
-The tool returns the medical data,
-Interpret the JSON and strictly output the result in this format:
-## Possible Diseases:
-1. **Disease Name:** {name} 
-**ICD Code:** {icd_code}
-**Reasoning:** {reasoning}
-2. **Disease Name:** {name} 
-**ICD Code:** {icd_code}
-**Reasoning:** {reasoning}
-...
-If the list is empty, just say: "No relevant data found."
-Do NOT add any other text.
-
 ### EXAMPLES
 
 User: Hi
@@ -90,8 +76,9 @@ Assistant: {"tool": "get_diagnosis_tool", "arguments": {"age": 21, "gender": "fe
 """
 
 output_formatting = """
+# IMPORTANT
 The tool has returned the medical data above. 
-Interpret the JSON and strictly output the result in this **styled text** format:
+Interpret the JSON and strictly output the result in provided **styled text** format:
 ## Possible Diseases:
 1. **Disease Name:** {name} 
 **ICD Code:** {icd_code}
@@ -101,7 +88,7 @@ Interpret the JSON and strictly output the result in this **styled text** format
 **Reasoning:** {reasoning}
 ...
 If the list is empty, just say: "No relevant data found."
-Do not add any other text.
+Do NOT add any other text. DO NOT return JSON.
 """
 
 
@@ -120,23 +107,9 @@ def parse_tool_calls(response: str) -> dict[str, Any]:
                 raise JSONDecodeError("Bad tool call format.")
             return tool_call
         except JSONDecodeError as e:
-            logger.error(f"TOOL JSON parser ERROR: {e}")
-            return {"error": f"Bad tool call format, JSON parsing failed. Please try again."}
+            logger.error(f"TOOL PARSER JSON ERROR: {e}")
+            raise
     return {}
-
-
-async def call_tool(tool_name: str, tool_args: dict[str, Any]) -> str:
-    """
-    Tool call by tool name with provided arguments as a parametr.
-    Tool must be in the 'allowed tools'
-    """
-    tool_fn = ALLOWED_TOOLS[tool_name]
-    try:
-        result = await tool_fn(**tool_args)
-    except Exception as e:
-        result = {"error": f"Tool execution error: {e}."}
-
-    return f"TOOL '{tool_name}' OUTPUT: {json.dumps(result)}"
 
 
 class LocalChatAgent:
@@ -163,23 +136,53 @@ class LocalChatAgent:
         self.history = [SystemMessage(content=SYSTEM)]
 
     async def chat(self, prompt: str) -> str:
+        # Prompt injection detection
+        try:
+            detect_prompt_injection(prompt)
+        except SecurityError as e:
+            return f"SECURITY ERROR: {e}"
+        # Prompt processing
         user_msg = HumanMessage(content=prompt)
         self.history.append(user_msg)
 
         response = self.agent.invoke(self.history)
         logger.debug(f"Local model RAW response: {response.content}")
         self.history.append(response)
+        print("HISTORIA\n", self.history)
         # Tool call processing
-        tool_call = parse_tool_calls(response.content)
-        if tool_call:
-            if "error" in tool_call:
-                self.history.append(HumanMessage(tool_call["error"]))
-            else:
-                tool_result = await call_tool(tool_call["tool"], tool_call["arguments"])
-                self.history.append(HumanMessage(tool_result + "\n\n" + output_formatting))
+        try:
+            tool_call = parse_tool_calls(response.content)
 
-            final_response = self.agent.invoke(self.history)
-            self.history.append(final_response)
-            return final_response.content
+            if tool_call:
+                tool_output_msg = ""
+                # Tool dispatching
+                try:
+                    tool_output = await tool_dispatcher(
+                        tool_call["tool"],
+                        tool_call["arguments"],
+                        ALLOWED_TOOLS,
+                        timeout=60.0)
+                    tool_output_msg = f"{tool_output}\n\n{output_formatting}"
 
+                except ToolValidationError as e:
+                    tool_output_msg = f"ERROR: The data provided is invalid: {e}. Please ask the user for correct information."
+                except ToolNotFoundError as e:
+                    tool_output_msg = f"ERROR: The requested tool was not found: {e}. DO NOT HALLUCINATE tools."
+                except ToolError as e:
+                    tool_output_msg = f"ERROR: There was an error executing the tool: {e}. Please try again."
+                except Exception as e:
+                    tool_output_msg = f"ERROR: Unexpected error during tool execution: {e}. Please try again."
+                # Add tool output to history
+                print(tool_output_msg)
+                self.history.append(HumanMessage(tool_output_msg))
+                # Agent response with tool output
+                final_response = self.agent.invoke(self.history)
+                self.history.append(final_response)
+                return final_response.content
+
+        except JSONDecodeError as e:
+            self.history.append(HumanMessage(f"ERROR: Failed to parse tool call JSON: {e}. Please try again."))
+            return response.content
+
+        # No tool call detected, return original response
         return response.content
