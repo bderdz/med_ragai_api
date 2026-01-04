@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, time
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -7,6 +7,7 @@ from src.schemas import DiagnoseResponse, SymptomsInput
 from src.llm.guardrails import detect_prompt_injection
 
 logger = logging.getLogger(__name__)
+metrics_logger = logging.getLogger("metrics")
 
 load_dotenv()
 
@@ -57,28 +58,50 @@ class DiagnosisAssistant:
             model=GEMINI_MODEL,
             temperature=0.2
         )
-        self.llm = model.with_structured_output(DiagnoseResponse)
+        self.llm = model.with_structured_output(DiagnoseResponse, include_raw=True)
         self.retriever = vectors_store.as_retriever(search_type="similarity", search_kwargs={"k": 6})
         logger.info(f"DiagnosisAssistant initialized with model: {GEMINI_MODEL}")
 
     def diagnose(self, patient_info: SymptomsInput) -> DiagnoseResponse:
         """
-
+        Diagnose patient based on symptoms using RAG based gemini model.
         """
+        start_time = time.time()
+
         # Prompt injection detection
         detect_prompt_injection(patient_info.__str__())
 
         symptoms = ", ".join(patient_info.symptoms)
+
+        # RAG
+        start_retrieval = time.time()
         docs = self.retriever.invoke(symptoms)
         context = "\n\n".join([doc.page_content for doc in docs])
+        retrieval_duration = time.time() - start_retrieval
+
         # DEBUG
         logger.debug(f"Symptoms: {symptoms}\nRetrieved context:\n{context}")
 
+        # LLM
         prompt = prompt_template.invoke({
             "gender": patient_info.gender,
             "age": patient_info.age,
             "symptoms": symptoms,
             "context": context
         })
+        start_llm = time.time()
         response = self.llm.invoke(prompt)
-        return response
+        llm_duration = time.time() - start_llm
+        parsed_response = response["parsed"]
+        token_usage = response["raw"].usage_metadata
+
+        # METRICS
+        total_duration = time.time() - start_time
+        (metrics_logger.info
+         (f"RAG DIAGNOSIS: model={GEMINI_MODEL} "
+          f"retrieval_time={round(retrieval_duration, 4)}s "
+          f"context_docs_count={len(docs)} "
+          f"llm_response_time={round(llm_duration, 4)}s "
+          f"total_time={round(total_duration, 4)}s "
+          f"token_usage=(input={token_usage['input_tokens']} output={token_usage['output_tokens']} total={token_usage['total_tokens']})"))
+        return parsed_response

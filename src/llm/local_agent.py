@@ -1,4 +1,4 @@
-import json, re, logging
+import json, re, logging, time
 from json import JSONDecodeError
 from typing import Any
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
@@ -8,6 +8,7 @@ from src.llm.tools import get_diagnosis_tool
 from src.llm.dispatcher import tool_dispatcher, ToolError, ToolValidationError, ToolNotFoundError
 
 logger = logging.getLogger(__name__)
+metrics_logger = logging.getLogger("metrics")
 
 # Local model config ( Pipeline kwargs )
 config = {
@@ -137,6 +138,8 @@ class LocalChatAgent:
 
     async def chat(self, prompt: str) -> str:
         # Prompt injection detection
+        start_time = time.time()
+
         try:
             detect_prompt_injection(prompt)
         except SecurityError as e:
@@ -172,17 +175,32 @@ class LocalChatAgent:
                     tool_output_msg = f"ERROR: There was an error executing the tool: {e}. Please try again."
                 except Exception as e:
                     tool_output_msg = f"ERROR: Unexpected error during tool execution: {e}. Please try again."
+
                 # Add tool output to history
                 print(tool_output_msg)
                 self.history.append(HumanMessage(tool_output_msg))
+
                 # Agent response with tool output
                 final_response = self.agent.invoke(self.history)
                 self.history.append(final_response)
+
+                # Metrics logging
+                duration = time.time() - start_time
+                metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=True duration={round(duration, 4)}s")
                 return final_response.content
 
         except JSONDecodeError as e:
             self.history.append(HumanMessage(f"ERROR: Failed to parse tool call JSON: {e}. Please try again."))
+
+            # Metrics logging
+            duration = time.time() - start_time
+            metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=False duration={round(duration, 4)}s")
+
             return response.content
+
+        # Metrics logging
+        duration = time.time() - start_time
+        metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=False duration={round(duration, 4)}s")
 
         # No tool call detected, return original response
         return response.content

@@ -1,8 +1,8 @@
-import json
-import logging, asyncio
+import logging, asyncio, json, time
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
+metrics_logger = logging.getLogger("metrics")
 
 
 class ToolError(Exception):
@@ -46,6 +46,8 @@ async def tool_dispatcher(
     Checks if the tool is allowed, sanitizes arguments and enforces a timeout.
     Returns the tool result as a JSON string.
     """
+    start_time = time.time()
+    tool_status = "success"
     logger.info(f"DISPATCHER: Processing tool '{tool_name}' with args: {tool_args}")
 
     if tool_name not in allowed_tools:
@@ -60,13 +62,20 @@ async def tool_dispatcher(
     # Error handling
     except asyncio.TimeoutError:
         logger.error(f"TIMEOUT: Tool '{tool_name}' timed out after {timeout}s")
+        tool_status = "timeout"
         raise ToolTimeoutError(f"Tool execution timeout after {timeout}s")
     except ToolValidationError as e:
         logger.error(f"TOOL VALIDATION ERROR: {e}")
+        tool_status = "error"
         raise
     except ToolError as e:
         logger.error(f"TOOL ERROR: {e}")
+        tool_status = "error"
         raise
     except Exception as e:
         logger.error(f"UNEXPECTED ERROR in tool '{tool_name}': {e}")
+        tool_status = "error"
         raise ToolError(f"An unexpected error occurred: {e}")
+    finally:
+        duration = time.time() - start_time
+        metrics_logger.info(f"TOOL EXECUTION: tool={tool_name} status={tool_status} duration={round(duration, 4)}s")
