@@ -4,9 +4,16 @@ from pydantic import BaseModel, Field
 
 class SymptomsInput(BaseModel):
     """Input schema for diagnose endpoint"""
-    age: int
+    age: int = Field(
+        ...,
+        gt=0,
+        lt=101,
+        description="Patient's age (must be positive integer)")
     gender: Literal["male", "female"]
-    symptoms: list[str]
+    symptoms: list[str] = Field(
+        ...,
+        min_length=1,
+        description="List of patient's symptoms (at least one symptom required)")
 
 
 class DiseaseDetails(BaseModel):

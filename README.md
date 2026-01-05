@@ -12,4 +12,21 @@ This project created for 2 university subjects:
 1. API
 2. Chat wrapper around the API with local llm model
 
-**Disease dataset source:** [A Structured Bangla Dataset of Disease-Symptom Associations to Improve Diagnostic Accuracy](https://data.mendeley.com/datasets/rjgjh8hgrt/5)
+## Tests
+
+To run tests, use the following command at the project root directory:
+
+```bash
+pytest
+```
+
+*Tests logs will be saved in the `logs/pytest.log` file.*
+
+1. API Tests: `tests/test_api.py`
+    - `test_api_works` - Tests if the API is reachable and returns a 200 status code.
+    - `test_diagnose_endpoint` - Tests the `/diagnose` endpoint with sample symptoms and checks if the response contains a diagnosis.
+    - `test_diagnose_validation` - Test the input schema validation for the `/diagnose` endpoint.
+
+## Sources
+
+**Disease dataset:** [A Structured Bangla Dataset of Disease-Symptom Associations to Improve Diagnostic Accuracy](https://data.mendeley.com/datasets/rjgjh8hgrt/5)
