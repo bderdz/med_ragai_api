@@ -1,5 +1,9 @@
+import random
+from http.client import responses
+
 from fastapi.testclient import TestClient
 from main import app
+from src.llm.guardrails import GUARDRAILS_PHRASES
 
 
 def test_api_works():
@@ -61,3 +65,20 @@ def test_diagnose_validation():
         }
         response = client.post("/diagnose", json=payload)
         assert response.status_code == 422
+
+
+def test_diagnose_prompt_injection():
+    with TestClient(app) as client:
+        payload = {
+            "age": 25,
+            "gender": "male",
+            "symptoms": [
+                "fever",
+                "cough",
+                f"lorem ipsum {random.choice(GUARDRAILS_PHRASES)} dolor sit amet consectetur",
+                "headache"
+            ]
+        }
+
+        response = client.post("/diagnose", json=payload)
+        assert response.status_code == 403

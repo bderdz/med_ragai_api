@@ -1,3 +1,4 @@
+import json
 import logging, os, time
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
@@ -77,7 +78,7 @@ class DiagnosisAssistant:
         start_retrieval = time.time()
         docs = self.retriever.invoke(symptoms)
         context = "\n\n".join([doc.page_content for doc in docs])
-        retrieval_duration = time.time() - start_retrieval
+        retrieval_time = time.time() - start_retrieval
 
         # DEBUG
         logger.debug(f"Symptoms: {symptoms}\nRetrieved context:\n{context}")
@@ -91,17 +92,22 @@ class DiagnosisAssistant:
         })
         start_llm = time.time()
         response = self.llm.invoke(prompt)
-        llm_duration = time.time() - start_llm
-        parsed_response = response["parsed"]
-        token_usage = response["raw"].usage_metadata
+        llm_time = time.time() - start_llm
 
         # METRICS
-        total_duration = time.time() - start_time
-        (metrics_logger.info
-         (f"RAG DIAGNOSIS: model={GEMINI_MODEL} "
-          f"retrieval_time={round(retrieval_duration, 4)}s "
-          f"context_docs_count={len(docs)} "
-          f"llm_response_time={round(llm_duration, 4)}s "
-          f"total_time={round(total_duration, 4)}s "
-          f"token_usage=(input={token_usage['input_tokens']} output={token_usage['output_tokens']} total={token_usage['total_tokens']})"))
-        return parsed_response
+        total_time = time.time() - start_time
+        token_usage = response["raw"].usage_metadata
+        latency = {
+            "retrieval_s": round(retrieval_time, 4),
+            "llm_s": round(llm_time, 4),
+            "total_s": round(total_time, 4)
+        }
+        log_data = {
+            "model": GEMINI_MODEL,
+            "context_docs_count": len(docs),
+            "latency": latency,
+            "token_usage": token_usage
+        }
+
+        metrics_logger.info(f"DIAGNOSE METRICS: {json.dumps(log_data)}")
+        return response["parsed"]

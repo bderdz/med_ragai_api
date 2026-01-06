@@ -22,10 +22,11 @@ pytest
 
 *Tests logs will be saved in the `logs/pytest.log` file.*
 
-1. API Tests: `tests/test_api.py`
+1. API: `tests/test_api.py`
     - `test_api_works` - Tests if the API is reachable and returns a 200 status code.
     - `test_diagnose_endpoint` - Tests the `/diagnose` endpoint with sample symptoms and checks if the response contains a diagnosis.
     - `test_diagnose_validation` - Test the input schema validation for the `/diagnose` endpoint.
+    - `test_diagnose_prompt_injection` - Test if the API is protected against prompt injection attacks.
 
 ## Sources
 

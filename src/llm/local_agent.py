@@ -119,9 +119,9 @@ class LocalChatAgent:
     Main task is collect information about patient.
     """
 
-    def __init__(self, model: str):
+    def __init__(self, model_name: str):
         self.model = HuggingFacePipeline.from_model_id(
-            model_id=model,
+            model_id=model_name,
             task="text-generation",
             pipeline_kwargs=config
         )
@@ -130,7 +130,7 @@ class LocalChatAgent:
             verbose=True
         )
         self.history: list[BaseMessage] = [SystemMessage(content=SYSTEM)]
-        logger.info(f"LocalChatAgent initialized with model: {model}")
+        logger.info(f"LocalChatAgent initialized with model: {model_name}")
 
     def reset_history(self):
         logger.info("Chat Agent history reset.")
@@ -151,7 +151,16 @@ class LocalChatAgent:
         response = self.agent.invoke(self.history)
         logger.debug(f"Local model RAW response: {response.content}")
         self.history.append(response)
-        print("HISTORIA\n", self.history)
+
+        # Metrics template
+        log_data = {
+            "model": self.model.model_id,
+            "tool": False,
+            "latency": {
+                "total_s": 0.0,
+            },
+        }
+
         # Tool call processing
         try:
             tool_call = parse_tool_calls(response.content)
@@ -185,22 +194,27 @@ class LocalChatAgent:
                 self.history.append(final_response)
 
                 # Metrics logging
-                duration = time.time() - start_time
-                metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=True duration={round(duration, 4)}s")
+                total_s = round(time.time() - start_time, 4)
+                log_data["tool"] = True
+                log_data["latency"]["total_s"] = total_s
+
+                metrics_logger.info(f"LOCAL MODEL METRICS: {json.dumps(log_data)}")
                 return final_response.content
 
         except JSONDecodeError as e:
             self.history.append(HumanMessage(f"ERROR: Failed to parse tool call JSON: {e}. Please try again."))
 
             # Metrics logging
-            duration = time.time() - start_time
-            metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=False duration={round(duration, 4)}s")
+            total_s = round(time.time() - start_time, 4)
+            log_data["latency"]["total_s"] = total_s
+            metrics_logger.info(f"LOCAL MODEL METRICS: {json.dumps(log_data)}")
 
             return response.content
 
         # Metrics logging
-        duration = time.time() - start_time
-        metrics_logger.info(f"LOCAL MODEL RESPONSE: tool=False duration={round(duration, 4)}s")
+        total_s = round(time.time() - start_time, 4)
+        log_data["latency"]["total_s"] = total_s
+        metrics_logger.info(f"LOCAL MODEL METRICS: {json.dumps(log_data)}")
 
         # No tool call detected, return original response
         return response.content

@@ -77,5 +77,14 @@ async def tool_dispatcher(
         tool_status = "error"
         raise ToolError(f"An unexpected error occurred: {e}")
     finally:
-        duration = time.time() - start_time
-        metrics_logger.info(f"TOOL EXECUTION: tool={tool_name} status={tool_status} duration={round(duration, 4)}s")
+        total_time = time.time() - start_time
+        latency = {
+            "total_s": round(total_time, 4),
+        }
+        log_data = {
+            "tool": tool_name,
+            "status": tool_status,
+            "latency": latency,
+        }
+
+        metrics_logger.info(f"TOOL EXECUTION: {json.dumps(log_data)}")

@@ -25,7 +25,7 @@ def get_vectors_store() -> Chroma:
         logger.info(f"Loading existing vector store from: {DB_PATH}")
         return Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
     else:
-        logger.info(f"Vector store not found. Creating new vector store in: f{DB_PATH}")
+        logger.info(f"Vector store not found. Creating new vector store in: {DB_PATH}")
         df = pd.read_csv(DATASET_FILENAME)
         docs = prepare_docs(df, DATASET_FILENAME)
 
