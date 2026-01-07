@@ -22,3 +22,16 @@ dependencies = [
     "sentence-transformers>=5.2.0",
     "thefuzz>=0.22.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+log_cli = "true"
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)s] %(message)s"
+log_file = "logs/pytest.log"
+log_file_level = "DEBUG"
+log_file_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+testpaths = [
+    "tests",
+]
+python_files = "test_*.py"

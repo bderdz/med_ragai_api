@@ -26,14 +26,27 @@ class ToolNotFoundError(ToolError):
 
 
 def sanitize_tool_args(tool_args: dict[str, Any]) -> dict[str, Any]:
+    sanitized_args = {}
+
     for key, value in tool_args.items():
         if isinstance(value, str):
-            tool_args[key] = value.strip()
+            value = value.strip()
 
             if len(value) > 1000:
                 raise ToolValidationError(f"Argument '{key}' exceeds maximum length.")
 
-    return tool_args
+            if key == "gender":
+                value = value.lower()
+        elif isinstance(value, list):
+            if key == "symptoms":
+                if not all(isinstance(item, str) for item in value):
+                    raise ToolValidationError(f"All items in '{key}' must be strings.")
+
+                value = [item.strip() for item in value]
+
+        sanitized_args[key] = value
+
+    return sanitized_args
 
 
 async def tool_dispatcher(
@@ -77,6 +90,7 @@ async def tool_dispatcher(
         tool_status = "error"
         raise ToolError(f"An unexpected error occurred: {e}")
     finally:
+        # Metrics logging
         total_time = time.time() - start_time
         latency = {
             "total_s": round(total_time, 4),
