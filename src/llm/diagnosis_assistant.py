@@ -13,6 +13,7 @@ metrics_logger = logging.getLogger("metrics")
 load_dotenv()
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+RERANK_MODEL = os.getenv("RERANK_MODEL", 'cross-encoder/ms-marco-MiniLM-L-6-v2')
 SYSTEM = """
 ## ROLE
 You are highly capable medical assistant. Your task is to analyze patient symptoms, 
@@ -61,7 +62,7 @@ class DiagnosisAssistant:
         )
         self.llm = model.with_structured_output(DiagnoseResponse, include_raw=True)
         self.retriever = vectors_store.as_retriever(search_type="similarity", search_kwargs={"k": 12})
-        self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+        self.cross_encoder = CrossEncoder(RERANK_MODEL)
         logger.info(f"DiagnosisAssistant initialized with model: {GEMINI_MODEL}")
 
     def diagnose(self, patient_info: SymptomsInput) -> DiagnoseResponse:
