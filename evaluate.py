@@ -58,7 +58,7 @@ def recall_evaluation(sample_size: int = 30, k=6, rerank: bool = False) -> None:
         if hit:
             hits += 1
         else:
-            logging.info(f"RECALL MISS: rerank={rerank} disease='{disease}' symptoms='{query}' retrieved='{[doc.page_content for doc in docs]}'")
+            logging.info(f"RECALL MISS: rerank={rerank} disease={disease} symptoms={query} retrieved={[doc.metadata for doc in docs]}")
 
     recall = hits / sample_size
     metrics_logger.info(f"RECALL EVALUATION: rerank={rerank} sample_size={sample_size} k={k} hits={hits} recall={recall:.2%}")

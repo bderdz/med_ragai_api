@@ -5,14 +5,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from sentence_transformers import CrossEncoder
 from langchain_chroma import Chroma
 from src.schemas import DiagnoseResponse, SymptomsInput
-from src.llm.guardrails import detect_prompt_injection
+from src.llm.guardrails import run_guardrails, SecurityError
 
 logger = logging.getLogger(__name__)
 metrics_logger = logging.getLogger("metrics")
 
 load_dotenv()
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 SYSTEM = """
 ## ROLE
 You are highly capable medical assistant. Your task is to analyze patient symptoms, 
@@ -70,8 +70,8 @@ class DiagnosisAssistant:
         """
         start_time = time.time()
 
-        # Prompt injection detection
-        detect_prompt_injection(patient_info.__str__())
+        # Guardrails check
+        run_guardrails(patient_info.__str__())
 
         symptoms = ", ".join(patient_info.symptoms)
 
