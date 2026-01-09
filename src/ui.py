@@ -6,7 +6,7 @@ from src.llm import LocalChatAgent
 EXAMPLES = [
     "Hello",
     "Hi, i'm a 23 years old man. I have headache, cough and temperature.",
-    "Hi, I'm not feeling well. I have a persistent cough and sore throat."]
+    "Hi, I'm not feeling well."]
 
 
 class ChatAgentUI:
@@ -26,21 +26,24 @@ class ChatAgentUI:
                     self.interface.chatbot.clear(fn=self.clear_history)
                 with gr.Column(scale=1):
                     gr.Markdown("**Welcome to the Medical Diagnosis Assistant**\n\n"
-                                "**This AI-powered medical assistant helps you identify possible diseases based on your symptoms.**")
+                                "**A Retrieval-Augmented Generation (RAG) based medical diagnosis assistant"
+                                "designed to assist in medical diagnosis. The assistant helps to provide medical "
+                                "diagnosis based on patient symptoms, age and gender**")
                     gr.Markdown("## ❔ How to use:")
                     gr.Markdown("### 💬 Chat:")
                     gr.Markdown(
                         "You can start a conversation with the AI medical assistant by typing your messages in the chat interface on the left."
-                        "**The assistant will guide you through a series of questions to gather necessary information for diagnosis:**\n\n"
+                        "**The assistant will guide you through a series of questions to collect necessary information for diagnosis:**\n\n"
                         "1. Age\n\n2. Gender\n\n3. List of symptoms\n\n")
                     gr.Markdown("### 📡 API:")
                     gr.Markdown(
-                        "The chat agent is built on top of the Diagnosis Assistant API. You can access the API documentation at **/docs endpoint** "
+                        "The chat agent is only for showcase and built on top of the Diagnosis Assistant API.\n\n"
+                        "You can access the API documentation at **`/docs` endpoint** "
                         "[http://localhost:8000/docs](http://localhost:8000/docs) once the server is running.")
-                    gr.Markdown("### ⚠️ Info:")
+                    gr.Markdown("### ⚠️ NOTE:")
                     gr.Markdown(
-                        "**Bigger LLM like gemini-2.5-flash may take longer time to respond than lite version..️**\n\n"
-                        "**HTTP Request timeout is set to 120 seconds.**")
+                        "**Bigger LLM like `gemini-2.5-flash` may take longer time to respond than lite version.️**\n\n"
+                        "**For best performance, it's recommended to use default LLMs models.**")
 
     def clear_history(self) -> None:
         """Clear chat agent history"""
