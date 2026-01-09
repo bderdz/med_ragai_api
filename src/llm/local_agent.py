@@ -174,7 +174,7 @@ class LocalChatAgent:
                         tool_call["tool"],
                         tool_call["args"],
                         ALLOWED_TOOLS,
-                        timeout=60.0)
+                        timeout=90.0)
                     tool_output_msg = f"{tool_output}\n\n{output_formatting}"
 
                 except ToolValidationError as e:
