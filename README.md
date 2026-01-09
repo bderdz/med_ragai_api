@@ -112,8 +112,8 @@ API key.
 
 ⚠️ **NOTE: It's recommended not to change default LLM and Embedding models to ensure better performance.**
 
-```ini
-GOOGLE_API_KEY = YOUR_API_KEY_HERE
+```dotenv
+GOOGLE_API_KEY=YOUR_API_KEY_HERE
 # Add other variables from .env.example here if you want to change defaults
 # ...
 ```
