@@ -1,7 +1,5 @@
-import random
 from fastapi.testclient import TestClient
 from main import app
-from src.llm.guardrails import GUARDRAILS_PHRASES
 
 
 def test_api_works():
