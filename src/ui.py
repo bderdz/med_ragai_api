@@ -26,7 +26,7 @@ class ChatAgentUI:
                     self.interface.chatbot.clear(fn=self.clear_history)
                 with gr.Column(scale=1):
                     gr.Markdown("**Welcome to the Medical Diagnosis Assistant**\n\n"
-                                "**A Retrieval-Augmented Generation (RAG) based medical diagnosis assistant"
+                                "**A Retrieval-Augmented Generation (RAG) based medical diagnosis assistant "
                                 "designed to provide medical diagnosis suggestions based on patient symptoms, age and gender**")
                     gr.Markdown("## ❔ How to use:")
                     gr.Markdown("### 💬 Chat:")
