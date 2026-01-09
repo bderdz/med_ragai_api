@@ -11,7 +11,7 @@ from logs import init_logging
 load_dotenv()
 init_logging()
 
-LOCAL_MODEL = os.getenv("LOCAL_MODEL")
+LOCAL_MODEL = os.getenv("LOCAL_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
 
 
 # API initialization
@@ -29,7 +29,3 @@ app.include_router(diagnosis.router)
 # UI layer above API with chat local agent
 chat_ui = ChatAgentUI(local_model=LOCAL_MODEL)
 app = gr.mount_gradio_app(app, chat_ui.ui, path="/")
-
-# Develop only
-if __name__ == '__main__':
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -3,7 +3,7 @@ from json import JSONDecodeError
 from typing import Any
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
-from src.llm.guardrails import detect_prompt_injection, SecurityError
+from src.llm.guardrails import run_guardrails, SecurityError
 from src.llm.tools import get_diagnosis_tool
 from src.llm.dispatcher import tool_dispatcher, ToolError, ToolValidationError, ToolNotFoundError
 
@@ -47,7 +47,7 @@ Your ONLY goal is to collect exactly 3 variables from the user:
 
 ### JSON TOOL CALL FORMAT
 When you have all info, output ONLY this JSON structure (no markdown, no text before/after):
-{"tool": "get_diagnosis_tool", "arguments": {"age": 25, "gender": "male", "symptoms": ["fever"]}}
+{"tool": "get_diagnosis_tool", "args": {"age": 25, "gender": "male", "symptoms": ["fever"]}}
 
 ### EXAMPLES
 
@@ -61,7 +61,7 @@ User: Male.
 Assistant: Please list your symptoms.
 
 User: I have a headache and high temperature.
-Assistant: {"tool": "get_diagnosis_tool", "arguments": {"age": 45, "gender": "male", "symptoms": ["headache", "high temperature"]}}
+Assistant: {"tool": "get_diagnosis_tool", "args": {"age": 45, "gender": "male", "symptoms": ["headache", "high temperature"]}}
 
 User: Help, I feel sick.
 Assistant: Hello. I am an AI medical assistant. To help you, I need to collect some basic information. First, how old are you?
@@ -73,7 +73,7 @@ User: I'm a woman.
 Assistant: Please list your symptoms.
 
 User: I have a temperature, cough and headache.
-Assistant: {"tool": "get_diagnosis_tool", "arguments": {"age": 21, "gender": "female", "symptoms": ["cough", "headache", "temperature"]}}
+Assistant: {"tool": "get_diagnosis_tool", "args": {"age": 21, "gender": "female", "symptoms": ["cough", "headache", "temperature"]}}
 """
 
 output_formatting = """
@@ -93,7 +93,7 @@ Do NOT add any other text. DO NOT return JSON.
 """
 
 
-def parse_tool_calls(response: str) -> dict[str, Any]:
+def parse_tool_call(response: str) -> dict[str, Any]:
     """
     Parse tool call json from model response text.
     Returns JSON dictionary
@@ -106,6 +106,8 @@ def parse_tool_calls(response: str) -> dict[str, Any]:
             tool_call = json.loads(parsed_call.group())
             if "tool" not in tool_call:
                 raise JSONDecodeError("Bad tool call format.")
+            if "args" not in tool_call:
+                raise JSONDecodeError("No args provided in tool call.")
             return tool_call
         except JSONDecodeError as e:
             logger.error(f"TOOL PARSER JSON ERROR: {e}")
@@ -137,11 +139,10 @@ class LocalChatAgent:
         self.history = [SystemMessage(content=SYSTEM)]
 
     async def chat(self, prompt: str) -> str:
-        # Prompt injection detection
         start_time = time.time()
-
+        # Guardrails check
         try:
-            detect_prompt_injection(prompt)
+            run_guardrails(prompt)
         except SecurityError as e:
             return f"SECURITY ERROR: {e}"
         # Prompt processing
@@ -163,7 +164,7 @@ class LocalChatAgent:
 
         # Tool call processing
         try:
-            tool_call = parse_tool_calls(response.content)
+            tool_call = parse_tool_call(response.content)
 
             if tool_call:
                 tool_output_msg = ""
@@ -171,7 +172,7 @@ class LocalChatAgent:
                 try:
                     tool_output = await tool_dispatcher(
                         tool_call["tool"],
-                        tool_call["arguments"],
+                        tool_call["args"],
                         ALLOWED_TOOLS,
                         timeout=60.0)
                     tool_output_msg = f"{tool_output}\n\n{output_formatting}"
