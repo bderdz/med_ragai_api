@@ -1,5 +1,6 @@
 from http.client import HTTPException
 
+import fastapi
 from fastapi import FastAPI, Depends, APIRouter, HTTPException
 from src.schemas import SymptomsInput, DiagnoseResponse
 from src.dependencies import get_rag_assistant
