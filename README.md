@@ -1,8 +1,22 @@
 # 👨‍⚕️ Medical Diagnosis RAG Assistant
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.121-009688?logo=fastapi&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-v1.0-1C3C3C?logo=langchain&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-GHCR-blue?logo=docker&logoColor=white)
+
+![Gemini](https://img.shields.io/badge/Google%20AI-Gemini%20Flash-8E75B2?logo=google&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Models-FFD21E?logo=huggingface&logoColor=black)
+
+![Status](https://img.shields.io/badge/Status-Educational-yellow)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+</div>
+
 **A Retrieval-Augmented Generation (RAG) based medical diagnosis assistant
-designed to assist in medical diagnosis. The assistant
-helps to provide medical diagnosis based on patient symptoms, age and gender**
+designed to provide medical diagnosis suggestions based on patient symptoms, age and gender**
 using a combination of a local vector database (`ChromaDB`), a local reranking model,
 and reasoning LLM Gemini model via API.
 
@@ -37,7 +51,7 @@ for project showcase, only for the needs of the subject **IBM LLM-Basic**.
 The disease dataset used in this project is sourced from:
 [A Structured Bangla Dataset of Disease-Symptom Associations](https://data.mendeley.com/datasets/rjgjh8hgrt/5)
 
-👉 **If you want to see preprocessing steps, check notebook in this repo:** [dataset processing notebook](https://github.com/bderdz/disease_icd_dataset)
+👉 **Preprocessing steps are available here:** [Dataset Processing Notebook](https://github.com/bderdz/disease_icd_dataset)
 
 ### ⚙️ Architecture Overview:
 
@@ -54,8 +68,8 @@ The disease dataset used in this project is sourced from:
 
 ### 🔒 Guardrails:
 
-Since the project interact with medical data and LLMs, security and safety are prioritized
-using a dedicated Guardrails layer:
+Since the project interacts with medical data and LLMs, security and safety are prioritized.
+The following guardrails are implemented:
 
 - **Prompt injection protection**
 - **Sensitive data detection**
@@ -63,7 +77,14 @@ using a dedicated Guardrails layer:
 - **Tool usage validation**
 - **Structured output**
 
-## 🚀 Running the project
+## 🚀 Getting Started
+
+👉 Follow these steps to setup and run the project Locally or with Docker.
+
+### Initial Setup (Required)
+
+Before running the project, you need to clone the repository **(if running Locally)** and configure
+the environment variables **(Both Locally and Docker)**.
 
 1. **Clone the repository:**
 
@@ -72,31 +93,7 @@ git clone https://github.com/bderdz/med_rag_assistant.git
 cd med_ragai_api
 ```
 
-2. **Setup project environment:**
-
-use UV project manager (**Recommended**):
-
-```bash
-# Install UV if you don't have it yet
-pip install uv
-
-# In project root directory run:
-uv sync
-```
-
-activate the environment:
-
-```bash
-source .venv/bin/activate
-```
-
-or run files with uv directly:
-
-```bash
-uv run <file_name>.py
-```
-
-3. **Configure environment variables:**
+2. ❗ **Configure environment variables:**
 
 **Create a `.env` file in the root directory** (based on `.env.example`) and set your
 API key.
@@ -109,13 +106,51 @@ GOOGLE_API_KEY = YOUR_API_KEY_HERE
 # ...
 ```
 
-4. **Start the App:**
+### 🐳 Run with Docker
+
+Run the application immediately using the pre-built image from GitHub Container Registry.
+
+```bash
+# Run Docker container with environment variables from .env file
+docker run -p 8000:8000 --env-file .env ghcr.io/bderdz/med_rag_assistant:latest
+```
+
+### Run Locally (Development)
+
+1. **Install dependencies using `uv` (Recommended)**
+
+```bash
+# Install UV if you don't have it yet
+pip install uv
+
+# Sync dependencies
+uv sync
+```
+
+2. **Activate the environment:**
+
+```bash
+source .venv/bin/activate
+```
+
+**or run files with `uv` directly:**
+
+```bash
+uv run <file_name>.py
+```
+
+3. **Start the App:**
 
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at http://localhost:8000
+4. **Access the App**
+
+Once the server is running, the API will be available at:
+
+- **API and Chat Interface:** http://localhost:8000
+- **API Docs (Swagger UI):** http://localhost:8000/docs
 
 ## 🔬 Evaluation
 
